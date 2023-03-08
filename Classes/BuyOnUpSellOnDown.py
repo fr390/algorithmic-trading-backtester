@@ -20,15 +20,29 @@ import pandas as pd
 from PortfolioConstructor import PortfolioConstructor
 
 class BuyOnUpSellOnDown(Strategy):
-	def __init__(self, ticker, start, end, period):
-		Strategy.__init__(self, ticker, start, end, '1d')
+	def __init__(self, ticker, start, end, period, cash_val, lot_size):
+		super().__init__( ticker, start, end, '1d')
 		self.start_date = start 
 		self.end_date = end
 		self.ticker = ticker
 		self.period = period
+		self.cash_val = cash_val
+		self.lot_size = lot_size
 		self.df = self.get_df()
 		self.entry_exit_dates = self.get_exit_entry_dates()
 		self.trade_order_list = self.get_trade_order_list()
+
+	def get_cash_val(self):
+		return self.cash_val
+	
+	def set_cash_val(self, val):
+		self.cash_val = val
+
+	def get_lot_size(self):
+		return self.lot_size
+	
+	def set_lot_size(self, val):
+		self.lot_size = val
 
 	def get_df(self):
 		df = yf.download(self.ticker,self.start_date,self.end_date,progress=False)
@@ -50,7 +64,6 @@ class BuyOnUpSellOnDown(Strategy):
 		return entry_exit_dates
 
 	def get_trade_order_list(self):
-		# TODO - add in lot sizing
 		trade_order_list = []
 		count = 0
 		if self.entry_exit_dates[-1][0] == "ENTRY":
@@ -59,10 +72,11 @@ class BuyOnUpSellOnDown(Strategy):
 			entry_date = self.entry_exit_dates[2*i][1]
 			exit_date = self.entry_exit_dates[2*i+1][1]
 			count += 1
-			trade_order_list.append([count,self.ticker,100,1,entry_date.date(),exit_date.date()])
+			trade_order_list.append([count, self.ticker, self.lot_size, 1, entry_date.date(), exit_date.date()])
 		return trade_order_list
 
 	def get_signals(self, df):
+		# print(self.cash_val)
 		if self.is_up_day(str(df.name)[:-9]):
 			return "BUY"
 		else :
@@ -73,7 +87,7 @@ class BuyOnUpSellOnDown(Strategy):
 			print(trade)
 
 #Input in Start date, End date, Ticker, and moving average period 
-st = BuyOnUpSellOnDown("AAPL", dt.date(2019,1,1),dt.date.today(),20)
+st = BuyOnUpSellOnDown("AAPL", dt.date(2019,1,2),dt.date.today(), 20, 10_000, 5)
 trades = st.get_trade_order_list()
 
 cons = PortfolioConstructor(trades)
